@@ -1,0 +1,2 @@
+# CapsLockTriggeredMacros
+CapsLockTriggeredMacros for Digispark ATTiny85
