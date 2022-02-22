@@ -1,0 +1,236 @@
+/*-------CapsLockTriggeredMacros v1.00
+by Josh Vickers - 2/22/22
+
+Uses the modified libraries by danjovic to update the digispark LED to the status
+of Caps Lock. - https://hackaday.io/page/6947-digikeyboard-with-leds
+https://github.com/Danjovic/DigistumpArduino/tree/master/digistump-avr/libraries/DigisparkKeyboard
+*/
+
+#include "DigiKeyboard.h" // These two are modified from the originals to get the caps lock functionality.
+#include "hidkeys.h"
+
+int delayLevel = 250; // This is to put a little bit of spacing between keyboard
+                      // "inputs." Helpful if you are tabbing around between
+                      // fields, or using laggy programs.
+
+//-------------------------------------------------------------
+
+void setup() {
+  pinMode(1,OUTPUT); // BuiltIn LED as output
+  DigiKeyboard.sendKeyStroke(0); // Evidently this helps at the start of digispark sketches.
+
+  // Check the state of Caps Lock and change led accordingly
+  if (DigiKeyboard.getLEDs() & CAPS_LOCK)
+      digitalWrite(1, HIGH);
+  else 
+      digitalWrite(1, LOW);
+  DigiKeyboard.delay(10);
+  }
+
+//-------------------------------------------------------------
+
+void loop() {
+// Set the baseline capslock state.
+bool capsLockState = (DigiKeyboard.getLEDs() & CAPS_LOCK);
+
+//Give it time to detect a change.
+DigiKeyboard.delay(delayLevel);
+
+//Set the current state of capslock to another variable and compare.
+bool thisCapsLockState = (DigiKeyboard.getLEDs() & CAPS_LOCK);
+int clickCount = 0;
+
+DigiKeyboard.delay(10);
+if (thisCapsLockState != capsLockState){
+  //Signal that we are in a Ready State to receive add'l input.
+  flash(3);
+  capsLockState=!capsLockState;
+  
+  // Use a recursive function to return how many capslock presses occur.
+  clickCount = capsCounter(0);
+
+  // Signal end of Ready State and begin the indicated macro.
+  flash(2);
+  flash(2);
+  myMacros(clickCount);
+  }
+}
+
+//-------------------------------------------------------------
+
+int capsCounter(int myCount){
+// Feedback that a capslock press was counted.
+flash(3);
+bool capsLockState = (DigiKeyboard.getLEDs() & CAPS_LOCK);
+
+// The global delay level comes into effect here. This amount * 5 will be how long
+// the user has to press the capslock key again.
+for (int k = 0; k <= 5; k++){
+  DigiKeyboard.delay(delayLevel);
+bool thisCapsLockState = (DigiKeyboard.getLEDs() & CAPS_LOCK);
+  if (thisCapsLockState != capsLockState){
+    capsLockState=!capsLockState;
+    k=10;
+    // Recursive count
+    myCount = capsCounter(myCount+1);
+  }
+}
+
+  return myCount;
+  }
+
+//-------------------------------------------------------------
+
+void flash(int flashes){ // Flash the indicated amount of times, then reset
+                         // the LED to match capslock.
+for (int m=0; m<=flashes; m++){
+  digitalWrite(1,HIGH);
+DigiKeyboard.delay(delayLevel/10);
+  digitalWrite(1,LOW);
+  DigiKeyboard.delay(delayLevel/10);
+}
+  if (DigiKeyboard.getLEDs() & CAPS_LOCK){
+      digitalWrite(1, HIGH);
+  }else{
+      digitalWrite(1, LOW);
+  }
+}
+
+//-------------------------------------------------------------
+
+void myMacros(int macroNumber){ // This is where we program the individual macros.
+  boolean capsLockInitialState; // I suggest doing these as subroutines, so that
+  if(digitalRead(1) == HIGH){   // it's easy to change their macro numbers around.
+    capsLockInitialState = true;
+  }else{
+    capsLockInitialState = false;
+  }
+  switch(macroNumber){
+  
+    //Assume one capslock press is normal use. 
+    case 0:
+      //Accidental press. Exit.
+    break;
+
+    //The above isn't strictly necessary, but it serves as a reminder 
+    //not to start the macros with the first keypress. If there is no
+    //switch case for a number, the function will end. I start with 2
+    //presses for safety.
+
+// First Macro
+    case 2:
+      turnOffCapsLock();
+      DigiKeyboard.print("This is the first macro!");
+      if (capsLockInitialState == true){
+        turnOnCapsLock();
+      }
+    break;
+
+// Second Macro
+    case 3:
+      //turnOffCapsLock();
+      openNotepad(500);
+      //if (capsLockInitialState == true){
+      //turnOnCapsLock();
+      //}
+    break;
+
+
+// Copy one of the macro cases any time you want to add a macro.
+
+    
+  }
+}
+
+//-------------------------------------------------------------
+
+void turnOffCapsLock(){ // In case your macro is case sensitive.
+  if (digitalRead(1) == HIGH){
+    DigiKeyboard.sendKeyStroke(0);
+    DigiKeyboard.sendKeyStroke(KEY_CAPS_LOCK);
+    digitalWrite(1,LOW);
+  }
+}
+
+//-------------------------------------------------------------
+
+void turnOnCapsLock(){ // In case your macro is case sensitive.
+  if (digitalRead(1) == LOW){
+    DigiKeyboard.sendKeyStroke(0);
+    DigiKeyboard.sendKeyStroke(KEY_CAPS_LOCK);
+    digitalWrite(1,HIGH);
+  }
+}
+
+//-------------------------------------------------------------
+
+void tabKey(int pressCount){ // If you have to tab around a lot, this is helpful.
+  int i;
+  for(i=0;i<=pressCount;i++){
+    DigiKeyboard.sendKeyStroke(KEY_TAB);
+    DigiKeyboard.delay(50);
+  }
+}
+
+
+//-------------------------------------------------------------
+
+void ctrlTabKey(int pressCount){ // Same as the above, but tabs backwards.
+  int i;
+  for(i=0;i<=pressCount;i++){
+    DigiKeyboard.sendKeyStroke(KEY_TAB, MOD_CONTROL_LEFT);
+    DigiKeyboard.delay(50);
+
+  }
+}
+
+//-------------------------------------------------------------
+
+void copyKey(){ // The below definitions are just to make it easier to type long macros.
+    DigiKeyboard.sendKeyStroke(KEY_C, MOD_CONTROL_LEFT);
+  }
+
+
+//-------------------------------------------------------------
+
+
+void cutKey(){
+    DigiKeyboard.sendKeyStroke(KEY_X, MOD_CONTROL_LEFT);
+  }
+
+
+//-------------------------------------------------------------
+
+void altTab(){
+    DigiKeyboard.sendKeyStroke(KEY_TAB, MOD_ALT_LEFT);
+  }
+
+
+//-------------------------------------------------------------
+
+void pasteKey(){
+    DigiKeyboard.sendKeyStroke(KEY_V, MOD_CONTROL_LEFT);
+  }
+
+
+//-------------------------------------------------------------
+
+void selectAllKey(){
+    DigiKeyboard.sendKeyStroke(KEY_A, MOD_CONTROL_LEFT);
+  }
+
+
+//-------------------------------------------------------------
+
+void endKey(){
+    DigiKeyboard.sendKeyStroke(KEY_END);
+  }
+
+//-------------------------------------------------------------
+
+void openNotepad(int delayTime){ // An example of how you could set up a macro.
+DigiKeyboard.sendKeyStroke(KEY_R, MOD_GUI_LEFT);
+DigiKeyboard.delay(delayTime);
+DigiKeyboard.println("Notepad.exe");
+DigiKeyboard.delay(delayTime);
+}
