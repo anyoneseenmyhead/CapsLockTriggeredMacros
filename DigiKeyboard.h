@@ -33,8 +33,8 @@ typedef struct {
 } keyboard_report_t;
 
 // static keyboard_report_t keyboard_report; // sent to PC
- static volatile uchar ledState = 0xff; // received from PC
- static uchar idleRate; // repeat rate for keyboards in 4 ms units
+static volatile uchar ledState = 0xff; // received from PC
+static uchar idleRate; // repeat rate for keyboards in 4 ms units
 
 
 #define NUM_LOCK (1<<0)
@@ -89,39 +89,35 @@ class DigiKeyboardDevice : public Print {
     _delay_ms(250);
     usbDeviceConnect();
 
-
     usbInit();
 
     sei();
 
     // TODO: Remove the next two lines once we fix
     //       missing first keystroke bug properly.
-	memset((void *)&keyboard_report,0,sizeof(keyboard_report));
-	usbSetInterrupt((unsigned char*)&keyboard_report, sizeof(keyboard_report)); 
+    memset((void *)&keyboard_report,0,sizeof(keyboard_report));
+    usbSetInterrupt((unsigned char*)&keyboard_report, sizeof(keyboard_report)); 
   }
-  
   
   void update() {
     usbPoll();
   }
 
-	// delay while updating until we are finished delaying
-	void delay(long milli) {
-		unsigned long last = millis();
-	  while (milli > 0) {
-	    unsigned long now = millis();
-	    milli -= now - last;
-	    last = now;
-	    update();
-	  }
-	}
+  // delay while updating until we are finished delaying
+  void delay(long milli) {
+      unsigned long last = millis();
+    while (milli > 0) {
+      unsigned long now = millis();
+      milli -= now - last;
+      last = now;
+      update();
+    }
+  }
 
-
-   // get LED State
-   uchar getLEDs (void) {
-	   return ledState;
-   }
-
+  // get LED State
+  uchar getLEDs (void) {
+	  return ledState;
+  }
 
   //sendKeyStroke: sends a key press AND release
   void sendKeyStroke(byte keyStroke) {
